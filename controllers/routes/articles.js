@@ -6,7 +6,7 @@ const articlesRouter = require('express').Router();
 const supabase = require('../../models/db');
 const { NEWS_API_KEY } = process.env;
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 articlesRouter.get('/search',
 	// Input validation chain 
