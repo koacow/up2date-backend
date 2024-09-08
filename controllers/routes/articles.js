@@ -64,9 +64,8 @@ articlesRouter.get('/:topic_id',
 		if (data.length === 0) {
 			return res.status(404).json({ error: 'Topic not found' });
 		}
-		const q = data.map(({ keyword }) => keyword).join(' OR ');
+		const q = data.map(({ keyword }) => `"${keyword}"`).join(' OR ');
     
-		const [ { topic } ] = data;
 		const { pageNum } = req.query;
 
 		// Fetch articles from the News API based on the topic and page number
