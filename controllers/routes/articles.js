@@ -5,6 +5,7 @@ const { query, param, validationResult } = require('express-validator');
 const articlesRouter = require('express').Router();
 const supabase = require('../../models/db');
 const { NEWS_API_KEY } = process.env;
+const NEWS_API_ENDPOINT = 'https://newsapi.org/v2/everything';
 
 const PAGE_SIZE = 5;
 
@@ -24,7 +25,7 @@ articlesRouter.get('/search',
 		if (!query) {
 			return res.status(400).json({ error: 'Query is required' });
 		}
-		const response = await fetch(`https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		const response = await fetch(`${NEWS_API_ENDPOINT}?q=${query}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
 		if (response.ok) {
 			const articles = await response.json();
 			const { totalResults } = articles;
@@ -56,20 +57,20 @@ articlesRouter.get('/:topic_id',
 
 		// Get topic title from the database based on the topic ID
 		const { topic_id } = req.params;
-		const { data, error } = await supabase.from('topics').select('*').eq('id', topic_id);
+		const { data, error } = await supabase.from('topics_keywords').select('keyword').eq('topic_id', topic_id);
 		if (error) {
 			return res.status(500).json({ error: 'Internal server error' });
 		}
-
 		if (data.length === 0) {
 			return res.status(404).json({ error: 'Topic not found' });
 		}
+		const q = data.map(({ keyword }) => keyword).join(' OR ');
     
 		const [ { topic } ] = data;
 		const { pageNum } = req.query;
 
 		// Fetch articles from the News API based on the topic and page number
-		const response = await fetch(`https://newsapi.org/v2/everything?q=${topic}&apiKey=${NEWS_API_KEY}&sortBy=publishedAt&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		const response = await fetch(`${NEWS_API_ENDPOINT}?q=${q}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
 		if (response.ok) {
 			const articles = await response.json();
 			const { totalResults } = articles;
