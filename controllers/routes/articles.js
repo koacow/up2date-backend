@@ -5,7 +5,8 @@ const { query, param, validationResult } = require('express-validator');
 const articlesRouter = require('express').Router();
 const supabase = require('../../models/db');
 const { NEWS_API_KEY } = process.env;
-const NEWS_API_ENDPOINT = 'https://newsapi.org/v2/everything';
+const NEWS_API_EVERYTHING_ENDPOINT = 'https://newsapi.org/v2/everything';
+const NEWS_API_TOP_HEADLINES_ENDPOINT = 'https://newsapi.org/v2/top-headlines';
 
 const PAGE_SIZE = 5;
 
@@ -25,7 +26,7 @@ articlesRouter.get('/search',
 		if (!query) {
 			return res.status(400).json({ error: 'Query is required' });
 		}
-		const response = await fetch(`${NEWS_API_ENDPOINT}?q=${query}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		const response = await fetch(`${NEWS_API_EVERYTHING_ENDPOINT}?q=${query}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
 		if (response.ok) {
 			const articles = await response.json();
 			const { totalResults } = articles;
@@ -69,7 +70,7 @@ articlesRouter.get('/:topic_id',
 		const { pageNum } = req.query;
 
 		// Fetch articles from the News API based on the topic and page number
-		const response = await fetch(`${NEWS_API_ENDPOINT}?q=${q}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		const response = await fetch(`${NEWS_API_EVERYTHING_ENDPOINT}?q=${q}&apiKey=${NEWS_API_KEY}&sortBy=relevancy&language=en&pageSize=${PAGE_SIZE}&page=${pageNum}`);
 		if (response.ok) {
 			const articles = await response.json();
 			const { totalResults } = articles;
@@ -78,6 +79,24 @@ articlesRouter.get('/:topic_id',
 		}
 		return res.status(500).json({ error: 'Internal server error' });
 	});
+
+articlesRouter.get('/top-headlines',
+	// Input validation chain
+	query('pageNum').isInt().optional(), 
+	async (req, res) => {
+		const validationErrors = validationResult(req);
+		if (!validationErrors.isEmpty()) {
+			return res.status(400).json({ error: 'Invalid input' });
+		}
+		const { pageNum } = req.query;
+		const response = fetch(`${NEWS_API_TOP_HEADLINES_ENDPOINT}?apiKey=${NEWS_API_KEY}&country=us&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		if (response.ok) {
+			const articles = await response.json();
+			const { totalResults } = articles;
+			const totalPages = Math.ceil(totalResults / PAGE_SIZE);
+			return res.status(200).json({ ...articles, totalPages });
+		}
+})
 
 
 module.exports = articlesRouter;
