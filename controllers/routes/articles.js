@@ -45,6 +45,24 @@ articlesRouter.get('/topics', async (req, res) => {
 	return res.status(200).json(data);
 });
 
+articlesRouter.get('/top-headlines',
+	// Input validation chain
+	query('pageNum').isInt().optional(), 
+	async (req, res) => {
+		const validationErrors = validationResult(req);
+		if (!validationErrors.isEmpty()) {
+			return res.status(400).json({ error: 'Invalid input' });
+		}
+		const { pageNum } = req.query;
+		const response = await fetch(`${NEWS_API_TOP_HEADLINES_ENDPOINT}?apiKey=${NEWS_API_KEY}&country=us&pageSize=${PAGE_SIZE}&page=${pageNum}`);
+		if (response.ok) {
+			const articles = await response.json();
+			const { totalResults } = articles;
+			const totalPages = Math.ceil(totalResults / PAGE_SIZE);
+			return res.status(200).json({ ...articles, totalPages });
+		}
+});
+
 articlesRouter.get('/:topic_id',
 	// Input validation chain
 	query('pageNum').isInt().optional(),
@@ -80,23 +98,6 @@ articlesRouter.get('/:topic_id',
 		return res.status(500).json({ error: 'Internal server error' });
 	});
 
-articlesRouter.get('/top-headlines',
-	// Input validation chain
-	query('pageNum').isInt().optional(), 
-	async (req, res) => {
-		const validationErrors = validationResult(req);
-		if (!validationErrors.isEmpty()) {
-			return res.status(400).json({ error: 'Invalid input' });
-		}
-		const { pageNum } = req.query;
-		const response = fetch(`${NEWS_API_TOP_HEADLINES_ENDPOINT}?apiKey=${NEWS_API_KEY}&country=us&pageSize=${PAGE_SIZE}&page=${pageNum}`);
-		if (response.ok) {
-			const articles = await response.json();
-			const { totalResults } = articles;
-			const totalPages = Math.ceil(totalResults / PAGE_SIZE);
-			return res.status(200).json({ ...articles, totalPages });
-		}
-})
 
 
 module.exports = articlesRouter;
